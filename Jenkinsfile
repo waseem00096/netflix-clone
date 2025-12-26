@@ -62,20 +62,15 @@ pipeline {
        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    dir('kubernetes') { // You are now INSIDE the kubernetes folder
-                        sh '''
-                        export KUBECONFIG=/var/lib/jenkins/.kube/config
-                        # Reference the file directly
-                        kubectl apply -f manifest.yml 
-                        kubectl rollout status deployment/netflix-deployment
-                        kubectl get pods
-                        kubectl get svc
-                        '''
-                    }
+                    sh '''
+                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    # Run from root using the full path
+                    kubectl apply -f Kubernetes/manifest.yml
+                    kubectl rollout status deployment/netflix-deployment
+                    '''
                 }
             }
         }
-    }
     post {
         always {
             // Reclaims space on your 3.3Gi RAM server
