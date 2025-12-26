@@ -1,33 +1,35 @@
-pipeline{
+pipeline {
     agent any
-    tools{
+    tools {
         jdk 'jdk-21'
         nodejs 'node'
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
+        // Adding the PORT env variable we missed earlier
+        PORT = "3000" 
     }
     stages {
-        stage('clean workspace'){
-            steps{
+        stage('Clean Workspace') {
+            steps {
                 cleanWs()
             }
         }
-        stage('Checkout from Git'){
-            steps{
+        stage('Checkout from Git') {
+            steps {
                 git branch: 'main', url: 'https://github.com/waseem00096/netflix-clone.git'
             }
         }
-        stage("Sonarqube Analysis "){
-            steps{
+        stage("Sonarqube Analysis") {
+            steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix-clone  \
+                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix-clone \
                     -Dsonar.projectKey=netflix-clone'''
                 }
             }
         }
-        stage("quality gate"){
-           steps {
+        stage("Quality Gate") {
+            steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
                 }
@@ -35,7 +37,8 @@ pipeline{
         }
         stage('Install Dependencies') {
             steps {
-                sh "npm install"
+                // Added legacy-peer-deps to avoid the ERESOLVE error
+                sh "npm install --legacy-peer-deps"
             }
         }        
         stage('TRIVY FS SCAN') {
@@ -43,39 +46,46 @@ pipeline{
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
-                       sh "docker build -t netflix ."
-                       sh "docker tag netflix waseem09/netflix-clone:latest "
-                       sh "docker push waseem09/netflix-clone:latest "
+        stage("Docker Build & Push") {
+            steps {
+                script {
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {   
+                       sh "docker build -t waseem09/netflix-clone:latest ."
+                       sh "docker push waseem09/netflix-clone:latest"
                     }
                 }
             }
         }
-		stage('Docker Scout Image') {
+        stage('Docker Scout Image') {
             steps {
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
+                script {
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                        sh 'docker-scout quickview waseem09/netflix-clone:latest'
                        sh 'docker-scout cves waseem09/netflix-clone:latest'
-                       sh 'docker-scout recommendations waseem09/netflix-clone:latest'
                    }
                 }
             }
         }
-
-        stage("TRIVY-docker-images"){
-            steps{
+        stage("TRIVY Image Scan") {
+            steps {
                 sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
             }
         }
-        stage('App Deploy to Docker container'){
-            steps{
-                sh 'docker run -d --name netflix-clone-app -p 3000:3000 waseem09/netflix-clone:latest'
+        stage('Cleanup & Deploy') {
+            steps {
+                script {
+                    // Remove old container if it exists to avoid port/name conflicts
+                    sh "docker rm -f netflix-clone-app || true"
+                    // Pass the PORT environment variable to fix the "argument missing" error
+                    sh 'docker run -d --name netflix-clone-app -p 3000:3000 -e PORT=3000 waseem09/netflix-clone:latest'
+                }
             }
         }
-
     }
-   
+    post {
+        always {
+            // Important: Clean up dangling images to save your 3.3Gi RAM
+            sh 'docker image prune -f'
+        }
+    }
+}
