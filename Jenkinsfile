@@ -46,11 +46,11 @@ pipeline {
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push") {
+       stage("Docker Build & Push") {
             steps {
                 script {
                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {   
-                       sh "docker build -t waseem09/netflix-clone:latest ."
+                       // Build with the API key HERE so it is included in the pushed image
                        sh "docker build --build-arg TMDB_V3_API_KEY=0241f339597a981eef7440309193c7c5 -t waseem09/netflix-clone:latest ."
                        sh "docker push waseem09/netflix-clone:latest"
                     }
