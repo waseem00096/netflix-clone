@@ -77,7 +77,7 @@ pipeline {
                     // Remove old container if it exists to avoid port/name conflicts
                     sh "docker rm -f netflix-clone-app || true"
                     // Pass the PORT environment variable to fix the "argument missing" error
-                    sh 'docker run -d --name netflix-clone-app -p 3000:3000 -e PORT=3000 waseem09/netflix-clone:latest'
+                    sh 'docker run -d --name netflix-clone-app -p 80:80 -e PORT=80 waseem09/netflix-clone:latest'
                 }
             }
         }
