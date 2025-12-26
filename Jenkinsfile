@@ -66,7 +66,7 @@ pipeline {
                     dir('kubernetes') {
                         sh '''
                         export KUBECONFIG=/var/lib/jenkins/.kube/config
-                        kubectl apply -f manifest.yml
+                        kubectl apply -f Kubernetes/manifest.yml
                         # Update the deployment name below to match your manifest.yml
                         kubectl rollout status deployment/netflix-deployment
                         kubectl get pods
