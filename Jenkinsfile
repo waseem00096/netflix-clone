@@ -59,18 +59,19 @@ pipeline {
                 sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
             }
         }
-       stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
                     sh '''
                     export KUBECONFIG=/var/lib/jenkins/.kube/config
-                    # Run from root using the full path
+                    # Ensure the case matches your folder (Kubernetes vs kubernetes)
                     kubectl apply -f Kubernetes/manifest.yml
                     kubectl rollout status deployment/netflix-deployment
                     '''
                 }
             }
         }
+    } // End of Stages
     post {
         always {
             // Reclaims space on your 3.3Gi RAM server
@@ -78,4 +79,3 @@ pipeline {
         }
     }
 }
-}    
