@@ -15,14 +15,14 @@ pipeline{
         }
         stage('Checkout from Git'){
             steps{
-                git branch: 'main', url: 'https://github.com/waseem00096/amazon-prime.git'
+                git branch: 'main', url: 'https://github.com/waseem00096/netflix-clone.git'
             }
         }
         stage("Sonarqube Analysis "){
             steps{
                 withSonarQubeEnv('SonarQube') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=amazon-prime-video \
-                    -Dsonar.projectKey=amazon-prime-video '''
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix-clone  \
+                    -Dsonar.projectKey=netflix-clone'''
                 }
             }
         }
@@ -47,9 +47,9 @@ pipeline{
             steps{
                 script{
                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
-                       sh "docker build -t amazon-prime ."
-                       sh "docker tag amazon-prime-video waseem09/amazon-prime:latest "
-                       sh "docker push waseem09/amazon-prime:latest "
+                       sh "docker build -t netflix ."
+                       sh "docker tag netflix waseem09/netflix-clone:latest "
+                       sh "docker push waseem09/netflix-clone:latest "
                     }
                 }
             }
@@ -58,9 +58,9 @@ pipeline{
             steps {
                 script{
                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
-                       sh 'docker-scout quickview waseem09/amazon-prime:latest'
-                       sh 'docker-scout cves waseem09/amazon-prime:latest'
-                       sh 'docker-scout recommendations waseem09/amazon-prime:latest'
+                       sh 'docker-scout quickview waseem09/netflix-clone:latest'
+                       sh 'docker-scout cves waseem09/netflix-clone:latest'
+                       sh 'docker-scout recommendations waseem09/netflix-clone:latest'
                    }
                 }
             }
@@ -68,12 +68,12 @@ pipeline{
 
         stage("TRIVY-docker-images"){
             steps{
-                sh "trivy image waseem09/amazon-prime:latest > trivyimage.txt" 
+                sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
             }
         }
         stage('App Deploy to Docker container'){
             steps{
-                sh 'docker run -d --name amazon-prime -p 3000:3000 waseem09/amazon-prime:latest'
+                sh 'docker run -d --name netflix-clone-app -p 3000:3000 waseem09/netflix-clone:latest'
             }
         }
 
