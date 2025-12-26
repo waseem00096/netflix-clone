@@ -56,16 +56,7 @@ pipeline {
                 }
             }
         }
-        stage('Docker Scout Image') {
-            steps {
-                script {
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                       sh 'docker-scout quickview waseem09/netflix-clone:latest'
-                       sh 'docker-scout cves waseem09/netflix-clone:latest'
-                   }
-                }
-            }
-        }
+       
         stage("TRIVY Image Scan") {
             steps {
                 sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
