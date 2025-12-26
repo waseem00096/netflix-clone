@@ -6,8 +6,6 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        // Adding the PORT env variable we missed earlier
-        PORT = "3000" 
     }
     stages {
         stage('Clean Workspace') {
@@ -37,7 +35,6 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
-                // Added legacy-peer-deps to avoid the ERESOLVE error
                 sh "npm install --legacy-peer-deps"
             }
         }        
@@ -46,38 +43,43 @@ pipeline {
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-       stage("Docker Build & Push") {
+        stage("Docker Build & Push") {
             steps {
                 script {
                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {   
-                       // Build with the API key HERE so it is included in the pushed image
+                       // API key is correctly injected here
                        sh "docker build --build-arg TMDB_V3_API_KEY=0241f339597a981eef7440309193c7c5 -t waseem09/netflix-clone:latest ."
                        sh "docker push waseem09/netflix-clone:latest"
                     }
                 }
             }
         }
-       
         stage("TRIVY Image Scan") {
             steps {
                 sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
             }
         }
-        stage('Cleanup & Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Remove old container if it exists to avoid port/name conflicts
-                    sh "docker rm -f netflix-clone-app || true"
-                    // Pass the PORT environment variable to fix the "argument missing" error
-                    sh 'docker run -d --name netflix-clone-app -p 8081:80 -e PORT=80 waseem09/netflix-clone:latest'
-                                 
+                    // Use standard directory navigation if manifest is in a subfolder
+                    dir('kubernetes') {
+                        sh '''
+                        export KUBECONFIG=/var/lib/jenkins/.kube/config
+                        kubectl apply -f manifest.yml
+                        # Update the deployment name below to match your manifest.yml
+                        kubectl rollout status deployment/netflix-deployment
+                        kubectl get pods
+                        kubectl get svc
+                        '''
+                    }
                 }
             }
         }
     }
     post {
         always {
-            // Important: Clean up dangling images to save your 3.3Gi RAM
+            // Reclaims space on your 3.3Gi RAM server
             sh 'docker image prune -f'
         }
     }
