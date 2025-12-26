@@ -59,15 +59,14 @@ pipeline {
                 sh "trivy image waseem09/netflix-clone:latest > trivyimage.txt" 
             }
         }
-        stage('Deploy to Kubernetes') {
+       stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Use standard directory navigation if manifest is in a subfolder
-                    dir('kubernetes') {
+                    dir('kubernetes') { // You are now INSIDE the kubernetes folder
                         sh '''
                         export KUBECONFIG=/var/lib/jenkins/.kube/config
-                        kubectl apply -f Kubernetes/manifest.yml
-                        # Update the deployment name below to match your manifest.yml
+                        # Reference the file directly
+                        kubectl apply -f manifest.yml 
                         kubectl rollout status deployment/netflix-deployment
                         kubectl get pods
                         kubectl get svc
