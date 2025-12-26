@@ -69,6 +69,7 @@ pipeline {
                     sh "docker rm -f netflix-clone-app || true"
                     // Pass the PORT environment variable to fix the "argument missing" error
                     sh 'docker run -d --name netflix-clone-app -p 8081:80 -e PORT=80 waseem09/netflix-clone:latest'
+                    sh 'docker build --build-arg TMDB_V3_API_KEY=0241f339597a981eef7440309193c7c5 -t netflix .'             
                 }
             }
         }
